@@ -2,6 +2,18 @@
 
 Learn Game Development on J2ME
 
+### Emulating apps
+
+Applying the `j2me-app` gradle plugin will provide an `emulate` task.
+This uses [MicroEmulator](https://github.com/barteo/microemu/tree/master/microemulator#readme) 
+to emulate the generated JAR file. 
+
+Here's how to emulate the `example` project:
+
+```
+./gradlew :example:emulate
+```
+
 ### Running slideshows
 
 The slides are built using [Marp](https://github.com/marp-team/marp-cli),
