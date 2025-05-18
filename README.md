@@ -1,24 +1,32 @@
-# legacy-code
+# j2me-gamedev-series
 
-Videos on Computer Science and History
+Learn Game Development on J2ME. Playlist is available 
+[on YouTube](https://youtube.com/playlist?list=PLkZEhGAcd_8kK842RW7nr739FRRKqiE3S) 
 
-### Running slideshows
+## Emulating apps
 
-Start [Marp](https://marp.app/) CLI to browse and run presentations:
+Applying the `j2me-app` gradle plugin will provide an `emulate` task.
+This uses [MicroEmulator](https://github.com/barteo/microemu/tree/master/microemulator#readme) 
+to emulate the generated JAR file. 
 
-```sh
-npx @marp-team/marp-cli@4.1.2 -s .
-
-# this serves all .md files here through your web browser
-```
-
-If asked for installation with a message like the following, allow it. 
-This normally won't pop up again.
+Here's how to emulate the `example/` project:
 
 ```
-Need to install the following packages:
-@marp-team/marp-cli@4.1.2
-Ok to proceed? (y)
+./gradlew :example:emulate
+```
+
+## Running slideshows
+
+The slides are built using [Marp](https://github.com/marp-team/marp-cli),
+which is Node.js based. We're using a gradle plugin to automatically
+download Node.js behind the scenes and use it to run Marp. 
+
+Use the following command to start slideshow:
+
+```
+./gradlew :slideshow
 ```
 
 By default, the UI should come live on [port 8080](http://localhost:8080/).
+
+## Thanks! 👋
