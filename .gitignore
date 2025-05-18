@@ -1,3 +1,7 @@
+## CUSTOM ##
+.ignore/
+.jdk/
+
 .gradle
 **/build/
 !src/**/build/
