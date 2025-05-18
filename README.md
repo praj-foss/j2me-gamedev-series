@@ -1,24 +1,17 @@
-# legacy-code
+# j2me-gamedev-series
 
-Videos on Computer Science and History
+Learn Game Development on J2ME
 
 ### Running slideshows
 
-Start [Marp](https://marp.app/) CLI to browse and run presentations:
+The slides are built using [Marp](https://github.com/marp-team/marp-cli),
+which is Node.js based. We're using a gradle plugin to automatically
+download Node.js behind the scenes and use it to run Marp. 
 
-```sh
-npx @marp-team/marp-cli@4.1.2 -s .
-
-# this serves all .md files here through your web browser
-```
-
-If asked for installation with a message like the following, allow it. 
-This normally won't pop up again.
+Use the following command to start slideshow:
 
 ```
-Need to install the following packages:
-@marp-team/marp-cli@4.1.2
-Ok to proceed? (y)
+./gradlew :slideshow
 ```
 
 By default, the UI should come live on [port 8080](http://localhost:8080/).

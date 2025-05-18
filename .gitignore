@@ -1,6 +1,7 @@
 ## CUSTOM ##
 .ignore/
 .jdk/
+.idea/
 
 .gradle
 **/build/
