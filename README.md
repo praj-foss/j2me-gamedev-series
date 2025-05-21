@@ -29,4 +29,14 @@ Use the following command to start slideshow:
 
 By default, the UI should come live on [port 8080](http://localhost:8080/).
 
+## Creating new projects
+
+To create a new project, follow these steps:
+
+1. Create a new directory (for example: `pong`). This name will become your project name.
+2. Include project name in `settings.gradle.kts` file (adding this: `include("pong")`).
+3. Copy the contents from `example` directory to this.
+4. Run it once for verification (using command: `./gradlew :pong:emulate`).
+5. Sip your chai/coffee.
+
 ## Thanks! 👋
