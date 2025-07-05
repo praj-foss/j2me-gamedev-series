@@ -2,6 +2,7 @@
 .ignore/
 .jdk/
 .idea/
+.vscode/
 
 .gradle
 **/build/

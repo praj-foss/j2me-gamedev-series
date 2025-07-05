@@ -9,10 +9,14 @@ node {
     version.set("18.17.1")
 }
 
+/**
+ * Defines a new "slideshow" task for the root project.
+ *
+ * It works just like the following command:
+ *    npx @marp-team/marp-cli@4.1.2 -s .
+ */
 tasks.register<NpxTask>("slideshow") {
     command.set("@marp-team/marp-cli@4.1.2")
     args.set(listOf("-s", "."))
-
-//    uncomment below for running on a custom port
-//    environment.set(mapOf("PORT" to "9090"))
+//    environment.set(mapOf("PORT" to "9090")) // for a custom port
 }
