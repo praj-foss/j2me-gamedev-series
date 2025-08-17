@@ -12,11 +12,12 @@ public class FullGame extends MIDlet {
     final float S_PER_FRAME = 1f / FRAMES_PER_S;
 
     volatile boolean isRunning = false;
+    volatile boolean isAlive = true;
 
     final WhiteCanvas canvas = new WhiteCanvas();
-    final Ball ball = new Ball(0xff0000, canvas.getWidth()/8);
     final Board board = new Board(
             0x00af00, 10, canvas.getHeight() - 20, canvas.getWidth()/5, 16);
+    final Ball ball = new Ball(0xff0000,  15, canvas.getHeight()-50, canvas.getWidth()/8);
     final BrickWall wall = new BrickWall(
             0, canvas.statHeight, canvas.getWidth(), canvas.getHeight()/3);
 
@@ -24,12 +25,13 @@ public class FullGame extends MIDlet {
     final Timer countdown = new Timer();
     final TimerTask countdownTask = new TimerTask() {
         public void run() {
-            if (secondsLeft > 0) {
+            if (secondsLeft > 0 && isAlive) {
                 secondsLeft--;
             } else {
                 countdown.cancel();
                 ball.xVel = 0;
                 ball.yVel = 0;
+                isAlive = false;
             }
         }
     };
@@ -44,6 +46,13 @@ public class FullGame extends MIDlet {
                 checkBoardCollision();
                 checkWallCollision();
                 moveBall();
+                if (wall.isDestroyed()) {
+                    endScreen("YOU WON", 0x00af00);
+                    break;
+                } else if (!isAlive) {
+                    endScreen("YOU DIED", 0xaf0000);
+                    break;
+                }
 
                 canvas.clear();
                 canvas.drawBall(ball);
@@ -74,11 +83,19 @@ public class FullGame extends MIDlet {
         }
 
         void checkBounds() {
-            if (ball.x < 0 || ball.x > canvas.getWidth() - ball.dm) {
+            if (ball.x < 0 ) {
                 ball.xVel = -ball.xVel;
+                ball.x = 1;
+            } else if (ball.x > canvas.getWidth() - ball.dm) {
+                ball.xVel = -ball.xVel;
+                ball.x = canvas.getWidth() - ball.dm - 1;
             }
-            if (ball.y < canvas.statHeight || ball.y > canvas.getHeight() - ball.dm) {
+            if (ball.y < canvas.statHeight) {
                 ball.yVel = -ball.yVel;
+                ball.y = canvas.statHeight + 1;
+            }
+            if (ball.y > canvas.getHeight()) {
+                isAlive = false;
             }
         }
 
@@ -120,7 +137,7 @@ public class FullGame extends MIDlet {
                     float dy = ball.centerY() - y;
 
                     if (dx*dx + dy*dy < ball.dm*ball.dm/4f) {
-                        wall.brickGone[i][j] = true;
+                        wall.removeBrick(i, j);
 
                         if (dx > 0) ball.xVel = Math.abs(ball.xVel);
                         else if (dx < 0) ball.xVel = -Math.abs(ball.xVel);
@@ -140,12 +157,19 @@ public class FullGame extends MIDlet {
                 isRunning = false;
             }
         }
+
+        void endScreen(String text, int color) {
+            canvas.showDialog(text, color);
+            canvas.flushGraphics();
+            sleep(5000);
+            isRunning = false;
+        }
     };
 
     protected void startApp() {
         Display.getDisplay(this).setCurrent(canvas);
         isRunning = true;
-        secondsLeft = 120;
+        secondsLeft = 90;
         countdown.schedule(countdownTask, 1, 1000);
         new Thread(gameLoop).start();
     }
@@ -172,6 +196,18 @@ public class FullGame extends MIDlet {
             sb = new StringBuffer();
         }
 
+        void showDialog(String text, int color) {
+            int midW = getWidth()/2;
+            int midH = getHeight()/2;
+            int textH = g.getFont().getHeight();
+            int pad = getWidth()/6;
+
+            g.setColor(0);
+            g.fillRect(0, midH - pad, getWidth(), textH + pad);
+            g.setColor(color);
+            g.drawString(text, midW, midH, Graphics.HCENTER | Graphics.BASELINE);
+        }
+
         void drawBall(Ball b) {
             g.setColor(b.color);
             g.fillRoundRect((int)b.x, (int)b.y, b.dm, b.dm, b.dm, b.dm);
@@ -185,7 +221,7 @@ public class FullGame extends MIDlet {
         void drawBrickWall(BrickWall wall) {
             for (int i = 0; i < wall.cols; i++) {
                 for (int j = 0; j < wall.rows; j++) {
-                    if (wall.brickGone[i][j]) continue;
+                    if (wall.isEmpty(i, j)) continue;
                     g.setColor(wall.brickColor(i, j));
                     g.fillRect(
                             wall.xStart + i*wall.brickW,
@@ -219,11 +255,13 @@ public class FullGame extends MIDlet {
 
     static class Ball {
         final int color, dm;    // dm = diameter
-        float x = 50, y = 150, xVel = 40, yVel = 80;
+        float x = 50, y = 150, xVel = 40, yVel = -80;
 
-        Ball(int color, int diameter) {
+        Ball(int color, float x, float y, int diameter) {
             this.color = color;
             this.dm = diameter;
+            this.x = x;
+            this.y = y;
         }
 
         float centerX() { return x + dm/2f; }
@@ -233,7 +271,8 @@ public class FullGame extends MIDlet {
     static class BrickWall {
         final int rows = 3, cols = 5;
         final int h, w, xStart, yStart, brickW, brickH;
-        final boolean[][] brickGone = new boolean[cols][rows];
+        private int bricksLeft = rows * cols;
+        private final boolean[][] brickGone = new boolean[cols][rows];
 
         BrickWall(int x, int y, int width, int height) {
             h = height; w = width;
@@ -245,6 +284,19 @@ public class FullGame extends MIDlet {
 
         int brickColor(int row, int col) {
             return (row + col) % 2 == 0 ? 0x0000a4 : 0x000044;
+        }
+
+        void removeBrick(int row, int col) {
+            brickGone[row][col] = true;
+            bricksLeft--;
+        }
+
+        boolean isEmpty(int row, int col) {
+            return brickGone[row][col];
+        }
+
+        boolean isDestroyed() {
+            return bricksLeft == 0;
         }
     }
 
