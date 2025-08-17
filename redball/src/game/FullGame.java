@@ -14,7 +14,10 @@ public class FullGame extends MIDlet {
     volatile boolean isRunning = false;
 
     final WhiteCanvas canvas = new WhiteCanvas();
-    final Ball ball = new Ball();
+    final Ball ball = new Ball(0xff0000, canvas.getWidth()/8);
+
+    final BrickWall wall = new BrickWall(
+            0, canvas.statHeight, canvas.getWidth(), canvas.getHeight()/3);
 
     int secondsLeft;
     final Timer countdown = new Timer();
@@ -35,11 +38,13 @@ public class FullGame extends MIDlet {
             final int timePerFrame = 1000 / FRAMES_PER_S;
             long timePast = System.currentTimeMillis();
             while (isRunning) {
-                // todo: add bricks, collisions, HUD
+                checkCollision();
                 checkBounds();
                 moveBall();
+
                 canvas.clear();
                 canvas.drawBall(ball);
+                canvas.drawBrickWall(wall);
                 canvas.drawStats(secondsLeft);
                 canvas.flushGraphics();
 
@@ -55,11 +60,18 @@ public class FullGame extends MIDlet {
 
         void checkBounds() {
             if (ball.x < 0 || ball.x > canvas.getWidth() - ball.dm) {
-                ball.xVel *= -1;
+                ball.xVel = -ball.xVel;
             }
             if (ball.y < canvas.statHeight || ball.y > canvas.getHeight() - ball.dm) {
-                ball.yVel *= -1;
+                ball.yVel = -ball.yVel;
             }
+        }
+
+        void checkCollision() {
+            if (ball.y < wall.yStart + wall.h) {
+                ball.yVel = -ball.yVel;
+            }
+            // todo: check brick collisions
         }
 
         void sleep(long duration) {
@@ -107,6 +119,20 @@ public class FullGame extends MIDlet {
             g.fillRoundRect((int)b.x, (int)b.y, b.dm, b.dm, b.dm, b.dm);
         }
 
+        void drawBrickWall(BrickWall wall) {
+            for (int i = 0; i < wall.cols; i++) {
+                for (int j = 0; j < wall.rows; j++) {
+                    g.setColor(wall.brickColor(i, j));
+                    g.fillRect(
+                            wall.xStart + i*wall.brickW,
+                            wall.yStart + j*wall.brickH,
+                            wall.brickW,
+                            wall.brickH
+                    );
+                }
+            }
+        }
+
         void drawStats(int seconds) {
             g.setColor(0);
             g.fillRect(0, 0, getWidth(), statHeight);
@@ -128,12 +154,29 @@ public class FullGame extends MIDlet {
     }
 
     static class Ball {
-        final int color = 0xff0000;
-        final int dm = 30;    // diameter
+        final int color, dm;    // diameter
+        float x = 10, y = 150, xVel = 40, yVel = -60;
 
-        float x = 0;
-        float y = 60;
-        float xVel = 40;
-        float yVel = 60;
+        Ball(int color, int diameter) {
+            this.color = color;
+            this.dm = diameter;
+        }
+    }
+
+    static class BrickWall {
+        final int rows = 3, cols = 5;
+        final int h, w, xStart, yStart, brickW, brickH;
+
+        BrickWall(int x, int y, int width, int height) {
+            h = height; w = width;
+            brickW = w / cols;
+            brickH = h / rows;
+            xStart = x + (w % cols)/2;
+            yStart = y + (h % rows)/2;
+        }
+
+        int brickColor(int row, int col) {
+            return (row + col) % 2 == 0 ? 0x0000a4 : 0x000044;
+        }
     }
 }
