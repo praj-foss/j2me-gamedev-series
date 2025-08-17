@@ -15,7 +15,8 @@ public class FullGame extends MIDlet {
 
     final WhiteCanvas canvas = new WhiteCanvas();
     final Ball ball = new Ball(0xff0000, canvas.getWidth()/8);
-
+    final Board board = new Board(
+            0x00af00, 10, canvas.getHeight() - 20, canvas.getWidth()/5, 16);
     final BrickWall wall = new BrickWall(
             0, canvas.statHeight, canvas.getWidth(), canvas.getHeight()/3);
 
@@ -38,12 +39,15 @@ public class FullGame extends MIDlet {
             final int timePerFrame = 1000 / FRAMES_PER_S;
             long timePast = System.currentTimeMillis();
             while (isRunning) {
+                checkInput();
                 checkBounds();
-                checkCollision();
+                checkBoardCollision();
+                checkWallCollision();
                 moveBall();
 
                 canvas.clear();
                 canvas.drawBall(ball);
+                canvas.drawBoard(board);
                 canvas.drawBrickWall(wall);
                 canvas.drawStats(secondsLeft);
                 canvas.flushGraphics();
@@ -52,6 +56,17 @@ public class FullGame extends MIDlet {
                 sleep(timePast - System.currentTimeMillis());
             }
         };
+
+        void checkInput() {
+            int ks = canvas.getKeyStates();
+            if ((ks & WhiteCanvas.LEFT_PRESSED) != 0) {
+                board.x -= board.speed * S_PER_FRAME;
+            }
+            if ((ks & WhiteCanvas.RIGHT_PRESSED) != 0) {
+                board.x += board.speed * S_PER_FRAME;
+            }
+            board.x = Math.min(Math.max(board.x, 0), canvas.getWidth() - board.width);
+        }
 
         void moveBall() {
             ball.x += ball.xVel * S_PER_FRAME;
@@ -67,7 +82,25 @@ public class FullGame extends MIDlet {
             }
         }
 
-        void checkCollision() {
+        void checkBoardCollision() {
+            if (ball.y + ball.dm < board.y) {
+                return;
+            }
+            float x = Math.max(board.x, Math.min(ball.centerX(), board.x + board.width));
+            float y = Math.max(board.y, Math.min(ball.centerY(), board.y + board.height));
+
+            float dx = ball.centerX() - x;
+            float dy = ball.centerY() - y;
+
+            if (dx*dx + dy*dy < ball.dm*ball.dm/4f) {
+                if (dx > 0) ball.xVel = Math.abs(ball.xVel);
+                else if (dx < 0) ball.xVel = -Math.abs(ball.xVel);
+                if (dy > 0) ball.yVel = Math.abs(ball.yVel);
+                else if (dy < 0) ball.yVel = -Math.abs(ball.yVel);
+            }
+        }
+
+        void checkWallCollision() {
             if (ball.y > wall.yStart + wall.h) {
                 return; // ball is outside the wall
             }
@@ -144,6 +177,11 @@ public class FullGame extends MIDlet {
             g.fillRoundRect((int)b.x, (int)b.y, b.dm, b.dm, b.dm, b.dm);
         }
 
+        void drawBoard(Board board) {
+            g.setColor(board.color);
+            g.fillRect((int)board.x, (int)board.y, board.width, board.height);
+        }
+
         void drawBrickWall(BrickWall wall) {
             for (int i = 0; i < wall.cols; i++) {
                 for (int j = 0; j < wall.rows; j++) {
@@ -207,6 +245,20 @@ public class FullGame extends MIDlet {
 
         int brickColor(int row, int col) {
             return (row + col) % 2 == 0 ? 0x0000a4 : 0x000044;
+        }
+    }
+
+    static class Board {
+        final int color, width, height;
+        float x, y, speed;
+
+        Board(int color, float x, float y, int width, int height) {
+            this.color = color;
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            speed = width * 1.5f;
         }
     }
 }
