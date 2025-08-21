@@ -12,7 +12,7 @@ public class RedBall extends MIDlet {
             protected void paint(Graphics g) {
                 g.setColor(0xffffff);
                 g.fillRect(0, 0, getWidth(), getHeight());
-                g.setColor(0x0000ff);
+                g.setColor(0xff0000);
                 g.fillRoundRect(30, 30, 40, 40, 40, 40);
             }
         };
