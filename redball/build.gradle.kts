@@ -4,7 +4,7 @@ plugins {
 
 tasks.jar {
     manifest {
-        attributes["MIDlet-1"] = "RedBall, , game.RedBall" // "name, icon, entrypoint"
+        attributes["MIDlet-1"] = "RedBall, , game.BouncingBall" // "name, icon, entrypoint"
         attributes["MicroEdition-Profile"] = "MIDP-2.0"
         attributes["MicroEdition-Configuration"] = "CLDC-1.1"
 
