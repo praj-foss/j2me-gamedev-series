@@ -9,16 +9,7 @@ import javax.microedition.midlet.MIDletStateChangeException;
 public class BouncingBall extends MIDlet {
     final WhiteCanvas canvas = new WhiteCanvas();
 
-    protected void startApp() throws MIDletStateChangeException {
-        Display.getDisplay(this).setCurrent(canvas);
-        new Thread(new Runnable() {
-            public void run() {
-                loop();
-            }
-        }).start();
-    }
-
-    void loop() {
+    void gameLoop() {
         while (true) {
             canvas.clear();
             canvas.bounceBall();
@@ -26,6 +17,15 @@ public class BouncingBall extends MIDlet {
             canvas.drawBall();
             canvas.flushGraphics();
         }
+    }
+
+    protected void startApp() throws MIDletStateChangeException {
+        Display.getDisplay(this).setCurrent(canvas);
+        new Thread(new Runnable() {
+            public void run() {
+                gameLoop();
+            }
+        }).start();
     }
 
     protected void pauseApp() { }
@@ -50,7 +50,7 @@ public class BouncingBall extends MIDlet {
         int dm = 40;
         void drawBall() {
             g.setColor(0xff0000);
-            g.fillRoundRect(30, (int) yPos, dm, dm, dm, dm);
+            g.fillRoundRect(30, (int)yPos, dm, dm, dm, dm);
         }
 
         void moveBall() {
