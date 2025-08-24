@@ -33,7 +33,7 @@ public class BouncingBall extends MIDlet {
     protected void destroyApp(boolean b) throws MIDletStateChangeException { }
 
     static class WhiteCanvas extends GameCanvas {
-        private final Graphics g;
+        private Graphics g;
 
         WhiteCanvas() {
             super(true);
