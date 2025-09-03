@@ -28,6 +28,7 @@ Use the following command to start slideshow:
 ```
 
 By default, the UI should come live on [port 8080](http://localhost:8080/).
+To use a different port, try with environment variable `PORT` set to the target value.
 
 ## Creating new projects
 
@@ -38,5 +39,22 @@ To create a new project, follow these steps:
 3. Copy the contents from `example` directory to this.
 4. Run it once for verification (using command: `./gradlew :pong:emulate`).
 5. Sip your chai/coffee.
+
+## Generating thumbnails
+
+For the sake of automation, there is also a gradle task to generate YouTube video thumbnails.
+Use the following command to run this task:
+
+```
+./gradlew :thumbnail -Pepisode=25 -PscaleFactor=2
+```
+
+Here, `scaleFactor` property is optional and is set to `10` by default.
+The `episode` property is mandatory and must be a number within `0` to `99`.
+
+The generated thumbnail should look like this:
+
+![](/2025/thumbnails/example.png)
+
 
 ## Thanks! 👋

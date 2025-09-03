@@ -8,15 +8,17 @@ plugins {
     id("com.github.node-gradle.node") version "7.1.0"
 }
 
-node {
-    download.set(true)
-    version.set("18.17.1")
-}
+val episode = providers.gradleProperty("episode")
+val scaleFactor = providers.gradleProperty("scaleFactor").orElse("10")
+val thumbnailFile = project.layout.buildDirectory.file("thumbnail.png")
+
+data class Point(val x: Int, val y: Int)
+
 
 /**
  * Task to start slideshow using Marp CLI.
  * Use it like:
- *    ./gradlew :slideshow
+ *    PORT=8080 ./gradlew :slideshow
  *
  * It works just like the following command:
  *    npx @marp-team/marp-cli@4.1.2 -s .
@@ -24,70 +26,63 @@ node {
 tasks.register<NpxTask>("slideshow") {
     command.set("@marp-team/marp-cli@4.1.2")
     args.set(listOf("-s", "."))
-//    environment.set(mapOf("PORT" to "9090")) // for a custom port
+}
+node {
+    download.set(true)
+    version.set("18.17.1")
 }
 
-data class Point(
-    val x: Int, val y: Int
-)
-val episode = providers.gradleProperty("episode")
-val thumbnailFile = project.layout.buildDirectory.file("thumbnail.png")
 
 /**
  * Task to create thumbnail for YouTube videos.
  * Use it like:
- *    ./gradlew :thumbnail -Pepisode=42
+ *    ./gradlew :thumbnail -Pepisode=42 -PscaleFactor=16
  */
 tasks.register("thumbnail") {
+    if (!episode.isPresent) throw GradleException("""
+        This task needs property 'episode' to be set.
+        For example, try again with: -Pepisode=69
+        """.trimIndent())
+
+    inputs.properties("episode" to episode, "scaleFactor" to scaleFactor)
     outputs.file(thumbnailFile)
 
-    val ep = try {
-        if (!episode.isPresent) throw IllegalStateException()
-        val parsed = episode.get().toInt()
-        if (parsed !in 0..99) throw Exception()
-        parsed
-    } catch (_: IllegalStateException) {
-        throw GradleException("This task needs property 'episode' to be set. " +
-                "It can be specified using CLI. For example: -Pepisode=69")
-    } catch (_: Exception) {
-        throw GradleException("Property 'episode' must be a number within 0 to 99")
-    }
+    val ep = episode.map { it.toInt() }.filter { it in 0..99 }.orNull
+        ?: throw GradleException("Property 'episode' must be a number within 0 to 99")
 
-    fun start(digit: Int) = Point(20 + 28*(digit/5), 6 + 12*(digit%5))
-    fun end(p: Point) = Point(p.x + 16, p.y + 12)
+    val sf = scaleFactor.map { it.toInt() }.filter { it in 1..20 }.orNull
+        ?: throw GradleException("Property 'scaleFactor' must be a number within 1 to 20")
 
     doLast {
-        logger.lifecycle("Generating thumbnail for episode {}", ep)
-
         // read source images
         val bg = ImageIO.read(project.file("2025/thumbnails/bg.png"))
         val digits = ImageIO.read(project.file("2025/thumbnails/digits.png"))
+        logger.lifecycle("Generating thumbnail for episode {} with dimensions {}x{}",
+            ep, sf*bg.width, sf*bg.height)
 
-        val start = Point(92, 24)       // starting point of first digit
-        val size = Point(16, 12)        // width and height for each digit
-
+        // prepare for drawing digits
         val merged = BufferedImage(bg.width, bg.height, BufferedImage.TYPE_INT_RGB)
         val g = merged.createGraphics()
+
+        val size = Point(16, 12)                        // width and height for each digit
+
+        fun drawDigit(src: Point, dest: Point) = g.drawImage(
+            digits, dest.x, dest.y, dest.x+size.x, dest.y+size.y,
+            src.x, src.y, src.x+size.x, src.y+size.y, null)
+
+        fun srcForDigit(d: Int) = Point(20 + 28*(d/5), 6 + 12*(d%5))
+
+        // draw background and digits
         g.drawImage(bg, 0, 0, null)
-
-        // draw first digit
-        val s1 = start(ep/10)
-        val e1 = end(s1)
-        g.drawImage(digits, start.x, start.y, start.x+size.x, start.y + size.y,
-            s1.x, s1.y, e1.x, e1.y, null)
-
-        // draw first digit
-        val s2 = start(ep%10)
-        val e2 = end(s2)
-        g.drawImage(digits, start.x, start.y+size.y, start.x+size.x, start.y + 2*size.y,
-            s2.x, s2.y, e2.x, e2.y, null)
+        val first = Point(92, 24)
+        drawDigit(srcForDigit(ep/10), first)
+        drawDigit(srcForDigit(ep%10), Point(first.x, first.y+size.y))
         g.dispose()
 
-        // scale the image by 10x
-        val factor = 10
-        val scaled = BufferedImage(factor*bg.width, factor*bg.height, BufferedImage.TYPE_INT_RGB)
+        // upscale the image
+        val scaled = BufferedImage(sf*bg.width, sf*bg.height, BufferedImage.TYPE_INT_RGB)
         AffineTransformOp(
-            AffineTransform.getScaleInstance(factor.toDouble(), factor.toDouble()),
+            AffineTransform.getScaleInstance(sf.toDouble(), sf.toDouble()),
             AffineTransformOp.TYPE_NEAREST_NEIGHBOR
         ).filter(merged, scaled)
 
@@ -96,5 +91,15 @@ tasks.register("thumbnail") {
         ImageIO.write(scaled, "PNG", out)
 
         logger.lifecycle("Saved thumbnail to {}", out.path)
+    }
+}
+
+
+/**
+ * Task to clean up any build artifacts
+ */
+tasks.register("clean") {
+    doLast {
+        delete(project.layout.buildDirectory)
     }
 }
